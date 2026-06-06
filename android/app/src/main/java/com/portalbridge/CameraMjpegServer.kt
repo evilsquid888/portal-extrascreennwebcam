@@ -45,6 +45,24 @@ class CameraMjpegServer(
         Thread({ serve() }, "portal-cam-http").start()
     }
 
+    /**
+     * The Portal's camera HAL returns the ImageReader's full capacity buffer (~35 MB) with the
+     * real JPEG at the front and zero padding after it. Trim at the EOI marker (FF D9) — it
+     * can't occur inside entropy-coded JPEG data (FF bytes are stuffed as FF 00), so the first
+     * occurrence is the true end of the image.
+     */
+    private fun trimToJpegEnd(bytes: ByteArray): ByteArray {
+        var i = 2
+        while (i < bytes.size - 1) {
+            if (bytes[i] == 0xFF.toByte() && bytes[i + 1] == 0xD9.toByte()) {
+                val end = i + 2
+                return if (end < bytes.size) bytes.copyOf(end) else bytes
+            }
+            i++
+        }
+        return bytes
+    }
+
     private fun frontCameraId(): String {
         for (id in cameraManager.cameraIdList) {
             val c = cameraManager.getCameraCharacteristics(id)
@@ -64,7 +82,7 @@ class CameraMjpegServer(
                     val buf = img.planes[0].buffer
                     val bytes = ByteArray(buf.remaining())
                     buf.get(bytes)
-                    latestJpeg.set(bytes)
+                    latestJpeg.set(trimToJpegEnd(bytes))
                 } finally {
                     img.close()
                 }
