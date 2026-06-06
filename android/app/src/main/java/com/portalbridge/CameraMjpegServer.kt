@@ -25,9 +25,11 @@ class CameraMjpegServer(
     private val port: Int,
     private val width: Int = 1280,
     private val height: Int = 720,
-    private val targetFps: Int = 20
+    private val targetFps: Int = 30
 ) {
     private val latestJpeg = AtomicReference<ByteArray?>(null)
+    private val frameLock = Object()
+    @Volatile private var frameSeq = 0L
     private var cameraDevice: CameraDevice? = null
     private var session: CameraCaptureSession? = null
     private var imageReader: ImageReader? = null
@@ -83,6 +85,10 @@ class CameraMjpegServer(
                     val bytes = ByteArray(buf.remaining())
                     buf.get(bytes)
                     latestJpeg.set(trimToJpegEnd(bytes))
+                    synchronized(frameLock) {
+                        frameSeq++
+                        frameLock.notifyAll()
+                    }
                 } finally {
                     img.close()
                 }
@@ -117,6 +123,8 @@ class CameraMjpegServer(
                 val req = device.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
                     addTarget(target)
                     set(CaptureRequest.JPEG_QUALITY, 70.toByte())
+                    set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+                        android.util.Range(targetFps, targetFps))
                 }
                 s.setRepeatingRequest(req.build(), null, bgHandler)
             }
@@ -145,8 +153,8 @@ class CameraMjpegServer(
 
     private fun handleClient(client: Socket) {
         val boundary = "frame"
-        val frameIntervalMs = (1000 / targetFps).toLong()
         try {
+            client.tcpNoDelay = true   // don't let Nagle hold partial frames back
             val out = client.getOutputStream()
             out.write(
                 ("HTTP/1.0 200 OK\r\n" +
@@ -156,19 +164,23 @@ class CameraMjpegServer(
                     "Content-Type: multipart/x-mixed-replace; boundary=$boundary\r\n\r\n")
                     .toByteArray()
             )
+            // Push each frame the instant the camera produces it (no pacing sleep, no
+            // duplicate sends): wait on frameLock until frameSeq advances past what we sent.
+            var sentSeq = 0L
             while (running && !client.isClosed) {
-                val jpeg = latestJpeg.get()
-                if (jpeg != null) {
-                    out.write(
-                        ("--$boundary\r\n" +
-                            "Content-Type: image/jpeg\r\n" +
-                            "Content-Length: ${jpeg.size}\r\n\r\n").toByteArray()
-                    )
-                    out.write(jpeg)
-                    out.write("\r\n".toByteArray())
-                    out.flush()
+                synchronized(frameLock) {
+                    while (running && frameSeq == sentSeq) frameLock.wait(500)
+                    sentSeq = frameSeq
                 }
-                Thread.sleep(frameIntervalMs)
+                val jpeg = latestJpeg.get() ?: continue
+                out.write(
+                    ("--$boundary\r\n" +
+                        "Content-Type: image/jpeg\r\n" +
+                        "Content-Length: ${jpeg.size}\r\n\r\n").toByteArray()
+                )
+                out.write(jpeg)
+                out.write("\r\n".toByteArray())
+                out.flush()
             }
         } catch (e: Exception) {
             // client disconnected — normal
