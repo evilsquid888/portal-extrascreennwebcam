@@ -1,26 +1,23 @@
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
 }
 
 android {
     namespace 'com.portalbridge'
-    compileSdk 33
+    compileSdk 36
+    buildToolsVersion '36.1.0'   // 36.0.0 install on this machine is missing aapt; 36.1.0 is intact
 
     defaultConfig {
         applicationId "com.portalbridge"
-        minSdk 26
-        targetSdk 30
+        minSdk 26          // Portal Go is ~Android 10 (API 29); 26 is a safe install floor
+        targetSdk 30       // kept low on purpose: avoids API 33+ runtime-permission / API 34 FGS rules
         versionCode 1
         versionName "1.0"
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = '1.8'
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
     buildTypes {
         release {
@@ -30,6 +27,6 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.core:core-ktx:1.13.1'
 }
