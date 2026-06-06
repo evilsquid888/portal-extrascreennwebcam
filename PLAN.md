@@ -74,6 +74,18 @@ portal-extrascreennwebcam/
 - [ ] M5 — Both at once in a real Zoom call; tune fps/quality/latency
 - [ ] M6 (optional) — Native macOS CoreMediaIO camera extension to drop the OBS dependency
 
+## Later / ideas
+- **YUV capture path**: switch the ImageReader from HAL JPEG to YUV_420_888 and encode JPEG
+  in-app (YuvImage or libjpeg-turbo). Could shave the HAL JPEG stall (~20–30 ms of latency)
+  at the cost of CPU/battery on the QCS605. Measure glass-to-glass before/after to decide.
+- **Smart framing / tracking**: early builds appeared to track-and-frame; it stopped after we
+  pinned `CONTROL_AE_TARGET_FPS_RANGE (30,30)`. Mechanism: camera 0 is Meta's processed feed,
+  and `com.facebook.portal.aiservice` grabs camera 1 (raw sensor) whenever we stream — it's
+  the smart-framing brain and likely drives camera 0's crop, which our AE pin may now block.
+  Try removing the pin to confirm, then make it a launch toggle (no CLI on Android — use an
+  intent extra, e.g. `adb shell am start -n com.portalbridge/.MainActivity --ez fixedFps false`,
+  plumbed from start.sh). Trade-off: Meta's tracking vs locked 30 fps.
+
 ## Risks / unknowns (verify on real hardware)
 - **Camera access** on Portal's stripped Android — does Camera2 open the front sensor at all?
   (Make-or-break; test first.)
