@@ -63,7 +63,8 @@ portal-extrascreennwebcam/
 ## Milestones
 - [x] M0 — Decide architecture (combined app; MJPEG-over-USB; OBS for webcam)
 - [x] M1 — Scaffold project (Android app + Mac scripts + runbook)
-- [ ] M2 — Build APK (Android Studio or `gradle assembleDebug`) and `adb install`
+- [x] M2 — Build APK ✓ verified: AGP 9.0.1 / Gradle 9.2.1 / JDK 21, compileSdk 36 / build-tools 36.1.0,
+        minSdk 26 / targetSdk 30 → `app-debug.apk` (3.1 MB), BUILD SUCCESSFUL. `adb install` pending on hardware.
 - [ ] M3 — Prove camera half: app runs, `adb forward`, OBS browser source shows the lens,
         OBS Virtual Camera selectable in Zoom
 - [ ] M4 — Prove screen half: BetterDisplay virtual display + `screen_server.py` → Portal shows it
