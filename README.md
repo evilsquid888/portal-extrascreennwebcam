@@ -60,10 +60,20 @@ adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 
 ## Run a session
 
-1. **Make a virtual display** set to **Extend** (not Mirror), sized like the Portal (~1280x720):
+1. **Make a virtual display** set to **Extend** (not Mirror), sized exactly like the Portal panel
+   (**1280x800 for Portal Go**, 16:10):
    - **Windows:** install an Indirect Display Driver (usbmmidd_v2 / IddSampleDriver) or plug in
      an HDMI dummy plug.
-   - **macOS:** create a virtual display in BetterDisplay.
+   - **macOS:** create a virtual display in BetterDisplay (`brew install --cask betterdisplay`).
+
+   > **Sharp text = match the panel resolution 1:1.** Any mismatch means the Portal rescales
+   > every frame and text smears. For a Portal Go:
+   > - When creating the BetterDisplay virtual screen, choose aspect ratio **16:10**.
+   > - Set its resolution to exactly **1280x800**, and pick the **native (non-HiDPI)** variant —
+   >   a "1280x800 HiDPI" mode renders at 2560x1600 internally and gets downscaled again.
+   > - macOS may make the new display your *main* one (menu bar moves to it). Put it back:
+   >   System Settings → Displays → **Arrange…** → drag the white menu-bar strip onto your
+   >   built-in display.
 
 2. **Find its monitor index:**
    ```bash

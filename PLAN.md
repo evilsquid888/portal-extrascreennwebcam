@@ -64,10 +64,13 @@ portal-extrascreennwebcam/
 - [x] M0 — Decide architecture (combined app; MJPEG-over-USB; OBS for webcam)
 - [x] M1 — Scaffold project (Android app + Mac scripts + runbook)
 - [x] M2 — Build APK ✓ verified: AGP 9.0.1 / Gradle 9.2.1 / JDK 21, compileSdk 36 / build-tools 36.1.0,
-        minSdk 26 / targetSdk 30 → `app-debug.apk` (3.1 MB), BUILD SUCCESSFUL. `adb install` pending on hardware.
+        minSdk 26 / targetSdk 30 → `app-debug.apk` (3.1 MB), BUILD SUCCESSFUL. ✓ installed + launches on Portal Go.
 - [ ] M3 — Prove camera half: app runs, `adb forward`, OBS browser source shows the lens,
         OBS Virtual Camera selectable in Zoom
-- [ ] M4 — Prove screen half: BetterDisplay virtual display + `screen_server.py` → Portal shows it
+- [x] M4 — Prove screen half ✓ verified on Portal Go: BetterDisplay virtual display (extended) +
+        `screen_server.py` → Portal renders it live (~17 fps). Sharpness requires matching the panel:
+        virtual display must be 16:10, 1280x800, non-HiDPI (see README). Cursor is composited
+        server-side (CoreGraphics doesn't capture it).
 - [ ] M5 — Both at once in a real Zoom call; tune fps/quality/latency
 - [ ] M6 (optional) — Native macOS CoreMediaIO camera extension to drop the OBS dependency
 

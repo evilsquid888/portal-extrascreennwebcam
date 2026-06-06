@@ -6,13 +6,52 @@ MJPEG stream the Portal app pulls over the adb-reverse tunnel.
   python3 screen_server.py --monitor 2       # serve that display on :8081
 """
 import argparse
+import ctypes
 import io
 import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import mss
-from PIL import Image
+from PIL import Image, ImageDraw
+
+# CoreGraphics doesn't composite the cursor into captures, so we draw it ourselves.
+if sys.platform == "darwin":
+    class _CGPoint(ctypes.Structure):
+        _fields_ = [("x", ctypes.c_double), ("y", ctypes.c_double)]
+
+    _cg = ctypes.CDLL("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")
+    _cf = ctypes.CDLL("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")
+    _cg.CGEventCreate.restype = ctypes.c_void_p
+    _cg.CGEventCreate.argtypes = [ctypes.c_void_p]
+    _cg.CGEventGetLocation.restype = _CGPoint
+    _cg.CGEventGetLocation.argtypes = [ctypes.c_void_p]
+    _cf.CFRelease.argtypes = [ctypes.c_void_p]
+
+    def mouse_pos():
+        ev = _cg.CGEventCreate(None)
+        loc = _cg.CGEventGetLocation(ev)
+        _cf.CFRelease(ev)
+        return loc.x, loc.y
+elif sys.platform == "win32":
+    class _WinPoint(ctypes.Structure):
+        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+    def mouse_pos():
+        pt = _WinPoint()
+        ctypes.windll.user32.GetCursorPos(ctypes.byref(pt))
+        return pt.x, pt.y
+else:
+    def mouse_pos():
+        return None
+
+# Arrow polygon, hotspot at (0,0), ~21px tall at scale 1 (black body, white outline like macOS).
+_CURSOR = [(0, 0), (0, 16), (4, 13), (7, 20), (10, 18.5), (7, 12), (12, 12)]
+
+
+def draw_cursor(img, x, y, scale):
+    pts = [(x + px * scale, y + py * scale) for px, py in _CURSOR]
+    ImageDraw.Draw(img).polygon(pts, fill="black", outline="white")
 
 
 def make_handler(monitor_index, fps, quality):
@@ -38,6 +77,12 @@ def make_handler(monitor_index, fps, quality):
                     start = time.time()
                     shot = sct.grab(mon)
                     img = Image.frombytes("RGB", shot.size, shot.bgra, "raw", "BGRX")
+                    pos = mouse_pos()
+                    if pos is not None:
+                        mx, my = pos[0] - mon["left"], pos[1] - mon["top"]
+                        if 0 <= mx < mon["width"] and 0 <= my < mon["height"]:
+                            sx = shot.size[0] / mon["width"]  # retina scale
+                            draw_cursor(img, mx * sx, my * (shot.size[1] / mon["height"]), sx)
                     buf = io.BytesIO()
                     img.save(buf, format="JPEG", quality=quality)
                     data = buf.getvalue()
