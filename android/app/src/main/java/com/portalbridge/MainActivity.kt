@@ -56,7 +56,10 @@ class MainActivity : AppCompatActivity() {
         val mgr = getSystemService(CAMERA_SERVICE) as CameraManager
         // 1280x720 is the ceiling: the raw 12MP sensor (camera 1, 1080p-capable) is hidden from
         // third-party apps — cameraIdList only exposes Meta's processed camera 0.
-        cameraServer = CameraMjpegServer(mgr, port = 8080).also { it.start() }
+        // For experiments: adb shell am start -n com.portalbridge/.MainActivity --es cameraId 1
+        cameraServer = CameraMjpegServer(
+            mgr, port = 8080, forcedCameraId = intent.getStringExtra("cameraId")
+        ).also { it.start() }
     }
 
     override fun onRequestPermissionsResult(

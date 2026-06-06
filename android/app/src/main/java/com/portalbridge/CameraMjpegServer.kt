@@ -25,7 +25,8 @@ class CameraMjpegServer(
     private val port: Int,
     private val width: Int = 1280,
     private val height: Int = 720,
-    private val targetFps: Int = 30
+    private val targetFps: Int = 30,
+    private val forcedCameraId: String? = null
 ) {
     private val latestJpeg = AtomicReference<ByteArray?>(null)
     private val frameLock = Object()
@@ -71,6 +72,10 @@ class CameraMjpegServer(
      * raw 12MP sensor (up to 4000x3000, 1920x1080@30 available).
      */
     private fun frontCameraId(): String {
+        if (forcedCameraId != null) {
+            Log.i(TAG, "forcing camera id $forcedCameraId (cameraIdList=${cameraManager.cameraIdList.toList()})")
+            return forcedCameraId
+        }
         val front = cameraManager.cameraIdList.filter {
             cameraManager.getCameraCharacteristics(it)
                 .get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
