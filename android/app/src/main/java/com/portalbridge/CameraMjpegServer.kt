@@ -65,14 +65,25 @@ class CameraMjpegServer(
         return bytes
     }
 
+    /**
+     * Prefer a front camera that can output JPEG at the requested size. The Portal Go exposes
+     * two front cameras: id 0 is Meta's processed pipeline (capped at 1280x720), id 1 is the
+     * raw 12MP sensor (up to 4000x3000, 1920x1080@30 available).
+     */
     private fun frontCameraId(): String {
-        for (id in cameraManager.cameraIdList) {
-            val c = cameraManager.getCameraCharacteristics(id)
-            if (c.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT) {
-                return id
-            }
+        val front = cameraManager.cameraIdList.filter {
+            cameraManager.getCameraCharacteristics(it)
+                .get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
         }
-        return cameraManager.cameraIdList.first()
+        val chosen = front.firstOrNull { id ->
+            cameraManager.getCameraCharacteristics(id)
+                .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                ?.getOutputSizes(ImageFormat.JPEG)
+                ?.any { it.width == width && it.height == height } == true
+        } ?: front.firstOrNull() ?: cameraManager.cameraIdList.first()
+        Log.i(TAG, "cameras=${cameraManager.cameraIdList.toList()} front=$front chosen=$chosen " +
+            "for ${width}x$height")
+        return chosen
     }
 
     @SuppressLint("MissingPermission")

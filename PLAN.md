@@ -78,6 +78,10 @@ portal-extrascreennwebcam/
 - **Camera access** on Portal's stripped Android — does Camera2 open the front sensor at all?
   (Make-or-break; test first.)
 - Camera is **raw wide-angle**, no smart-framing.
+- **720p is the resolution ceiling** (verified): the Portal Go HAL exposes two front cameras —
+  camera 0 (Meta's processed path, max 1280x720@30) and camera 1 (raw 12MP, 1080p/4K-capable) —
+  but `cameraIdList` only shows camera 0 to third-party apps; camera 1 is framework-hidden and
+  held by `com.facebook.portal.aiservice`. Root would be required to use it.
 - **Mic unusable** without Meta DSP → audio from Mac (accepted).
 - Portal Android version / minSdk — set to 26; adjust if it won't install.
 - App is hidden from the home screen → always launched via `adb shell monkey` (start.sh).

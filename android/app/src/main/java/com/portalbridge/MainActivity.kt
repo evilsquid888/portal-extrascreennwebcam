@@ -54,6 +54,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun startCamera() {
         val mgr = getSystemService(CAMERA_SERVICE) as CameraManager
+        // 1280x720 is the ceiling: the raw 12MP sensor (camera 1, 1080p-capable) is hidden from
+        // third-party apps — cameraIdList only exposes Meta's processed camera 0.
         cameraServer = CameraMjpegServer(mgr, port = 8080).also { it.start() }
     }
 
