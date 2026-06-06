@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Portal Cam</title>
+  <style>
+    html, body { margin: 0; background: #000; overflow: hidden; }
+    img { width: 100vw; height: 100vh; object-fit: contain; display: block; }
+  </style>
+</head>
+<body>
+  <!-- Camera stream from the Portal, forwarded to the Mac via 'adb forward tcp:8080 tcp:8080'.
+       Load this file as an OBS 'Browser' source (Local file), then Start Virtual Camera. -->
+  <img src="http://localhost:8080" alt="Portal camera">
+</body>
+</html>
